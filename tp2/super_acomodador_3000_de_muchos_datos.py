@@ -4,10 +4,11 @@ import numpy as np
 import gc
 
 
-N_pacientes = 4
-path = "/media/libre/los_datos_de_datos/calamaro.exp.dc.uba.ar/~fraimondo/cienciadatos/data/"
+N_pacientes = 2
+
+path = "/home/francisco/tps/datos/tp2/"
 paciente_path = path + "P0{}.mat"
-save_path = path + "dataframe_reconstruido_{}.pickle"
+save_path = path + "dataframe_reconstruido_{}.hdf"
 for paciente in range(1, N_pacientes + 1):
     print("Paciente {}".format(paciente))
     print("Levantando matriz...")
@@ -40,7 +41,7 @@ for paciente in range(1, N_pacientes + 1):
     print("Listo")
    
     print("Guardando pickle...")
-    df_paciente.to_pickle(save_path.format(paciente))
+    df_paciente.to_hdf(save_path.format(paciente), "my_key", mode="w")
     print("Listo")
     
     gc.collect()
