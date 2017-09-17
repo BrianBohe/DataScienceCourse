@@ -4,15 +4,20 @@ import numpy as np
 import gc
 
 
-N_pacientes = 2
+N_P = 2
+N_S = 2
 
 path = "/home/francisco/tps/datos/tp2/"
-paciente_path = path + "P0{}.mat"
-save_path = path + "dataframe_reconstruido_{}.hdf"
-for paciente in range(1, N_pacientes + 1):
+load_path = path + "{}.mat"
+save_path = path + "{}.hdf"
+pacientes = \
+        ["P{:02d}".format(i) for i in list(range(1, 1 + N_P))] + \
+        ["S{:02d}".format(i) for i in list(range(1, 1 + N_S))]
+
+for paciente_index, paciente in enumerate(pacientes):
     print("Paciente {}".format(paciente))
     print("Levantando matriz...")
-    mat = scipy.io.loadmat(paciente_path.format(paciente))['data']
+    mat = scipy.io.loadmat(load_path.format(paciente))['data']
     print("Listo")
 
     N_epochs = mat.shape[0]
@@ -23,7 +28,7 @@ for paciente in range(1, N_pacientes + 1):
 
     print("Creando index...")
     iterables = [
-        [paciente for _ in range(N)] ,
+        [paciente_index for _ in range(N)],
         [i for i in range(N_epochs) for j in range(N_sensores) for k in range(N_valores)],
         [j for i in range(N_epochs) for j in range(N_sensores) for k in range(N_valores)],
         [k for i in range(N_epochs) for j in range(N_sensores) for k in range(N_valores)],
@@ -40,7 +45,7 @@ for paciente in range(1, N_pacientes + 1):
     df_paciente = pd.DataFrame({"valores": reshaped_mat}, index=index)
     print("Listo")
    
-    print("Guardando pickle...")
+    print("Guardando hdf...")
     df_paciente.to_hdf(save_path.format(paciente), "my_key", mode="w")
     print("Listo")
     
