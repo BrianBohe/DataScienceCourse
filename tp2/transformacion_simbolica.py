@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import math
 import gc
+from collections import defaultdict
 
 
 def transformacion_simbolica(df_):
@@ -59,7 +60,6 @@ for paciente in pacientes:
     print("\tListo")
 print("Listo")
 
-print(datos)
 print("Definiendo alfabeto...")
 n, sigma = max(datos, key=lambda x: x[0])
 
@@ -70,7 +70,9 @@ def asociar_simbolo(v):
     return (v - min_v) // step
 print("Listo")
 
-print("Transformando dataset...")
+total = 0
+cantidades = defaultdict(int)
+print("Calculando símbolo...")
 for paciente in pacientes:
     print("\tPaciente {}".format(paciente))
     print("\tLevantando hdf...")
@@ -80,10 +82,33 @@ for paciente in pacientes:
     print("\tAplicando transformación...")
     my_data["simbolo"] = asociar_simbolo(my_data["valores"])
 
+    for s in my_data["simbolo"]:
+        cantidades[s] += 1
+        total += 1
+
     print("\tGuardando hdf...")
     my_data.to_hdf(save_path.format(paciente), "my_key", mode="w")
     print("\tListo")
 
     gc.collect()
+print("Listo")
+
+print("Calculando probabilidades para cada símbolo...")
+for paciente in pacientes:
+    print("\tPaciente {}".format(paciente))
+    print("\tLevantando hdf...")
+    my_data = pd.read_hdf(save_path.format(paciente))
+    print("\tListo")
+    
+    print("\tCalculando probabilidad...")
+    probs = []
+    for s in my_data["simbolo"]:
+        probs.append(cantidades[s] / total)
+    my_data["probabilidad"] = np.array(probs)
+    print("\tListo")
+
+    print("\tGuardando hdf...")
+    my_data.to_hdf(save_path.format(paciente), "my_key", mode="w")
+    print("\tListo")
 print("Listo")
 
