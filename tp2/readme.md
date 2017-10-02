@@ -17,13 +17,13 @@ import math
 <h2>Levantando los datos</h2>
 
 <blockquote>
-    <p> Los datasets los transformamos a formato .hdf para acelerar la entrada. El script utilizado para realizar la transformación se encuentra en el siguiente link: <a href="https://drive.google.com/file/d/0B31LWRR8593HM095d04tamFKRWs/view?usp=sharing">https://drive.google.com/file/d/0B31LWRR8593HM095d04tamFKRWs/view?usp=sharing</a>. Generamos dos vectores de DataFrames, uno por cada grupo de personas:
+    <p> Los datasets los transformamos a formato .hdf para acelerar la entrada. El script utilizado para realizar la transformación se encuentra en este directorio y es: <a href="https://github.com/BrianBohe/DataScienceCourse/blob/master/tp2/super_acomodador_3000_de_muchos_datos.py">super_acomodador_3000_de_muchos_datos.py</a>. Generamos dos vectores de DataFrames, uno por cada grupo de personas:
     <ul>
         <li>Personas con capacidades cognitivas severamente disminuidas (<i>pacientes_P</i>)</li>
         <li>Personas con capacidad cognitiva normal (<i>pacientes_S</i>)</li>
     </ul>
-    
-    <p> Sólo trabajaremos con los electrodos en el conjunto {8,44,80,131,185}
+    </p>
+    <p> Sólo trabajaremos con los electrodos en el conjunto {8,44,80,131,185}</p>
     
     
 </blockquote>
