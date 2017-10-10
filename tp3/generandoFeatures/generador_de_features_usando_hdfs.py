@@ -142,4 +142,4 @@ df = pd.DataFrame(data=np_features, index=index, columns=index_columns)
 
 print(df)
 
-df.to_pickle("/Users/bbohe/Documents/EXACTAS/DataScience/repo/tp3/df_features.pickle")
+df.to_pickle("../df_features.pickle")
