@@ -83,7 +83,7 @@ def calcular_features_de_un_paciente(paciente):
 
 
 ## Aprovechamos los .hdf generados a partir de los .mat en el tp anterior.
-path = "/Users/bbohe/Documents/EXACTAS/DataScience/repo/tp2/datos/"
+path = "../../tp2/datos/"
 load_path = path + "/{}.hdf"
 
 def levantar_hdf(load_name, nth):
@@ -101,6 +101,7 @@ features_P = []
 features_S = []
 for load_name, N, features, offset in [("P", N_P, features_P, 0), ("S", N_S, features_S, 10)]:
     for i in range(1, 1 + N):
+        print(i)
         df_ = levantar_hdf(load_name, i)
         df_ = df_.loc[offset + i-1,:,electrodos,:]
 
@@ -108,9 +109,9 @@ for load_name, N, features, offset in [("P", N_P, features_P, 0), ("S", N_S, fea
 
         gc.collect()
 
-#print(features_P)
-#print("---")
-#print(features_S)
+print(features_P)
+print("---")
+print(features_S)
 
 np_features = []
 
@@ -141,4 +142,4 @@ df = pd.DataFrame(data=np_features, index=index, columns=index_columns)
 
 print(df)
 
-df.to_pickle("/Users/bbohe/Documents/EXACTAS/DataScience/repo/tp3/df_features.pickle")
+df.to_pickle("../df_features.pickle")
