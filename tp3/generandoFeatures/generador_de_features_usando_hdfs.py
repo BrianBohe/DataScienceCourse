@@ -8,6 +8,26 @@ import itertools
 import math
 import statistics as sts
 import gc as gc
+from sklearn.preprocessing import StandardScaler
+
+##Definimos el orden de los atributos antes de codear de forma rapida
+##Esta clase esta solo para asegurar ese orden.
+class Sample():
+
+    def __init__(self, featuresDict):
+        self.features = {}
+
+        for k,v in featuresDict.items():
+            self.features[k] = v
+
+    def show_features_as_np(self):
+        valores = np.empty([1,24])
+        
+        for i, forma_de_calcular_feature in enumerate(['media_','std_']):
+            for  j, tipo_de_banda in enumerate(['delta', 'theta', 'alpha', 'beta', 'gamma', 'delta_norm', 'theta_norm', 'alpha_norm', 'beta_norm', 'gamma_norm', 'intra', 'inter']):
+                valores[i*12+j] = self.features["{}{}".format(forma_de_calcular_feature,tipo_de_banda)]
+
+        return valores
 
 #Calculo la potencia de cada banda
 def calcular_potencia_por_bandas_de_frecuencias(f, P):
@@ -24,41 +44,31 @@ def calcular_potencia_por_bandas_de_frecuencias(f, P):
 def normalizar_banda(bandas):
     suma_del_poder_total = sum(bandas.values()) 
     bandas_norm = {}
+
     for key, value in bandas.items():
         bandas_norm["{}_norm".format(key)]= bandas[key]/suma_del_poder_total
+
     return bandas_norm
 
-# Calculo todos los marcadores que necesito para un paciente|epoch
-# Estos son: bandas, bandas_norm, intra/inter(proximamente)
-def calcular_marcadores_para_este_epoch(f,P):
-    bandas = calcular_potencia_por_bandas_de_frecuencias(f,P)
-    
-    bandas_norm = normalizar_banda(bandas)
-    bandas.update(bandas_norm)
-    
-    #Despues voy a ver que usamos de medida intra e interelectrodo
-    bandas.update({"intra":np.random.rand(20,24), "inter":np.random.rand(20,24)})
-    
-    return bandas
 
-def computar_features_para_estas_bandas(bandas_de_un_paciente):
+def crear_sample_con_features(lista_de_marcadores_por_epoch):
     features_paciente = {}
 
     #Junto todos los valores de un mismo marcador para usar mean y stdev de statistics
-    for key, value in bandas_de_un_paciente[0].items():
+    for key, value in lista_de_marcadores_por_epoch[0].items():
         
         _values = np.array([])
         
-        for dic in bandas_de_un_paciente:
+        for dic in lista_de_marcadores_por_epoch:
             _values = np.append(_values, dic[key])
 
         _mean = sts.mean(_values)
         _stdev = sts.stdev(_values,xbar=_mean)
 
-        features_paciente["mean_{}".format(key)] = _mean
-        features_paciente["stdev_{}".format(key)] = _stdev
+        features_paciente["media_{}".format(key)] = _mean
+        features_paciente["std_{}".format(key)] = _stdev
 
-    return features_paciente
+    return Sample(features_paciente)
 
 
 
@@ -66,20 +76,25 @@ def calcular_features_de_un_paciente(paciente):
     p_ = paciente.groupby(['epoch','tiempo']).mean()
 
     lista_de_epochs = list( set(p_.loc[:,:].index.get_level_values('epoch')) )
-    bandas_de_este_paciente = []
+    lista_de_marcadores_por_epoch = []
 
     for epoch in lista_de_epochs:
         
         frecuencias = p_.loc[epoch,:]
         f, P = scipy.signal.welch(frecuencias['valores'], fs=250, nperseg=201)
         
-        #Los marcadores segun el enunciado son bandas, bandas_normalizdas, 
-        # algo inter, y algo intra electrodo
-        bandas_de_este_paciente.append( calcular_marcadores_para_este_epoch(f,P) )
 
-    #print (bandas_de_un_paciente)
-    #print (bandas_de_un_paciente_norm)
-    return computar_features_para_estas_bandas(bandas_de_este_paciente)
+        # Calculo todos los marcadores que necesito para un epoch
+        # Estos son las bandas, las bandas normalizadas y alguna medida intra/inter electrodo
+        marcadores_de_este_epoch = calcular_potencia_por_bandas_de_frecuencias(f,P)
+        marcadores_de_este_epoch.update(normalizar_banda(marcadores_de_este_epoch))
+        
+        #TODO: Cambio de Intra Inter
+        marcadores_de_este_epoch.update({"intra":np.random.rand(20,24), "inter":np.random.rand(20,24)})
+        
+        lista_de_marcadores_por_epoch.append( marcadores_de_este_epoch )
+
+    return crear_sample_con_features(lista_de_marcadores_por_epoch)
 
 
 ## Aprovechamos los .hdf generados a partir de los .mat en el tp anterior.
@@ -95,33 +110,36 @@ def levantar_hdf(load_name, nth):
 ##Por ahora solo me quedo con los electrodos que me interesan
 electrodos = [8, 44, 80, 131, 185]
 
-N_P = 10
-N_S = 10
-features_P = []
-features_S = []
-for load_name, N, features, offset in [("P", N_P, features_P, 0), ("S", N_S, features_S, 10)]:
+N_P = 1
+N_S = 1
+
+lista_de_muestras = []
+
+for load_name, N, offset in [("P", N_P, 0), ("S", N_S, 10)]:
     for i in range(1, 1 + N):
         print(i)
         df_ = levantar_hdf(load_name, i)
         df_ = df_.loc[offset + i-1,:,electrodos,:]
 
-        features.append( calcular_features_de_un_paciente(df_) )
+        lista_de_muestras.append( calcular_features_de_un_paciente(df_) )
 
         gc.collect()
 
-print(features_P)
-print("---")
-print(features_S)
 
-np_features = []
+#Standarizo los datos
+print(lista_de_muestras)
 
-for features in [features_P, features_S]:
-    for dic in features:
-        np_aux = np.array(list(dic.values()))
-        if np_features == []:
-            np_features = np_aux
-        else:
-            np_features = np.vstack([np_features, [np_aux] ])
+np_features_por_paciente = []
+for muestra in lista_de_muestras:
+    np_features_por_paciente.append( muestra.show_features_as_np() )
+
+print(np_features_por_paciente)
+
+scaler = StandardScaler(copy=True, with_mean=True, with_std=True)
+scaler.fit(np_features_por_paciente)
+np_features_por_paciente = scaler.transform(np_features_por_paciente)
+
+print(np_features_por_paciente)
 
 print("Creando index...")
 arrays_index = [
@@ -138,7 +156,7 @@ arrays_columns = [
 
 index_columns = pd.MultiIndex.from_arrays(arrays_columns, names=["agrupacion_feature","feature"])
 
-df = pd.DataFrame(data=np_features, index=index, columns=index_columns)
+df = pd.DataFrame(data=np_features_por_paciente, index=index, columns=index_columns)
 
 print(df)
 
