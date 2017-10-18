@@ -1,115 +1,602 @@
-# Técnicas de Machine Learning
-# 1. Introducción
-
-En este trabajo práctico vamos a utilizar técnicas de machine learning univariadas (una variable/feature) y multivariadas (mutiples variabes/features).
-
-Algunas definiciones:
-- *Feature*: En Machine Learning, un feature es una propiedad o característica individual y cuantificable del dominio de nuestro problema.
-- *samples* o muestra: Se refiere a cada muestra observable. En este caso, una muestra es un sujeto.
-- *label* o etiqueta: Cuando se realiza una clasificación, cada muestra tiene asociado un label.
-
-## Clasificación
-
-En Machine Learning, el problema de Clasificación se define como la identificación del grupo o categoría al que pertenences una muestra. El ejeplo mas utilizado en la literatura es el de clasificar un correo electrónico como *Spam* o no.
-
-Cuando la clasificación es supervisada, el modelo se entrena con un set de datos de ejemplo. Es decir, para el clasificador de spam, existe un conjunto de emails donde un supervisor ya clasificó manualmente y le puso le etiqueta correspondiente a cada uno.
-
-Los algoritmos de clasificación trabajan sobre features. Para cada muestra, se deben extraer uno o mas features que junto con las etiquetas de cada muestra, consisten en el set de datos que el clasificador utiliza para aprender. En el caso del correo electrónico, ejemplos pueden ser el dominio de la dirección de envío, si esta se encuentra en la lista de direcciones conocidas del usuario, el idioma del mensaje, la longitud, la cantidad de archivos adjuntos, (etc).
-
-Luego de entrenar el modelo, se pueden utilizar para predecir la etiqueta de nuevas muestras. Si contamos con las etiquetas de las nuevas muestras (mediante un supervisor), podemos estimar medidas de performance del clasificador.
-
-Para mas información acerca de clasificadores supervisados: [Scikit Learn](http://scikit-learn.org/stable/supervised_learning.html)
 
 
-- [Wikipedia](https://en.wikipedia.org/wiki/Statistical_classification)
+```python
+import pandas as pd
+import numpy as np
 
-## Validación Cruzada *(Cross Validation)*
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.ticker import NullFormatter
 
-Idealmente, al cuantificar la performance de un clasificador, este se entrena en un set de datos, comunmente denominado *training set* y luego se mide la performance en otro set de datos independiente, llamado *testing set*. Si al finalizar la cuantificación, uno decide cambiar el modelo o los parámetros del clasificador, se debe obtener un nuevo *testing set* dado que los *labels* del set de prueba ya fueron observados y utilizados.
-
-Dependiendo del dominio del problema, obtener un nuevo set de prueba puede ser sencillo (por ejemplo, utilizando posts de facebook o tweets) o muy costoso (como el de este trabajo práctico). En casos donde la cantidad de muestras es acotada y dificil de obtener, se utiliza la técnica de *cross validation* o validación cruzada (CV). El método consiste en dividir el set de datos en dos (*train* y *test*) y estimar la performance utilizando diferentes divisiones del mismo. Existen distintas mecanismos específicos, cada uno representando distintas caracteristicas de las muestras disponibles.
-
-* *K-Fold*: Las muestras se dividen en ![](https://latex.codecogs.com/gif.latex?\inline&space;K) grupos (*folds*) de igual tamaño (si es posible). Se entrena en ![](https://latex.codecogs.com/gif.latex?\inline&space;K-1) folds y se prueba en el fold restante. Al final se obtienen ![](https://latex.codecogs.com/gif.latex?\inline&space;K) estimaciones de performance. El valor a reportar es la media.
-* *Repeated K-Fold*: Idem al anterior, pero realizando varias repeticiones, obteniendo folds distintos en cada repetición.
-* Leave one out: Cada set de entrenamiento se crea tomando ![](https://latex.codecogs.com/gif.latex?\inline&space;N-1) de las ![](https://latex.codecogs.com/gif.latex?\inline&space;N) muestras. El set de prueba consiste en la muestra que quedó fuera. Al final, se obtienen ![](https://latex.codecogs.com/gif.latex?\inline&space;N) estimaciones. No es posible realizar repeticiones debido a que no hay ningun factor aleatorio asociado.
-* Shuffle Split: Genera los set de entreamiento y test realizando una división aleatoria segun los tamaños definidos por el usuario. Se realizan tantas repeticiones como indica el parámetro *n_splits*.
-
-Un problema que puede estar asociado a las muestras es que el set de datos puede no estar balanceado. Es decir, para dos etiquetas A y B, podemos tener un 80% de muestras A y un 20 % de muestras B. Por lo tanto, es deseable utilizar sets de CV que respeten esta distribución de clases. Los mecanismos *Stratified* realizan las divisiones teniendo en cuenta las distrubiciones de las clases.
-
-* Stratified K-Fold
-* Stratified Shuffle Split
-
-Todos estos métodos se encuentran implementados en [Scikit Learn - Model Selection](http://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection)
-
-- [Wikipedia](https://en.wikipedia.org/wiki/Cross-validation_(statistics))
-- [Scikit Learn](http://scikit-learn.org/stable/modules/cross_validation.html)
-
-## Curva ROC
-Una curva _Receiver Operating Characteristic_ (ROC) es un gráfico que muestra la capacidad de clasificación de una variable o clasificador con respecto a dos clases. Ilustra como varia la performance según el _threshold_ elegido. Para cada threshold elegido (eje X), ilustra el radio de _True Positives_ (TPR) vs el radio de _False Positives_ (FPR).
-
-Dado un feature, se puede computar la curva ROC para graficar la capacidad de discriminación de ese feature con respecto a la pertenencia al grupo S o P. La curva ROC se cuantifica midiendo el area bajo la curva (AUC).
-
-Para mas información:
-- [Wikipedia](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)
-- [Kennis Research](https://kennis-research.shinyapps.io/ROC-Curves/)
-- [Scikit Learn](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html)
-
-## Preprocesamiento
-
-Muchos de los algoritmos de clasificación requieren que las variables tengan una distribución similar a una Gaussiana con media igual a cero y varianza unitaria. Para ellos, suele ser importante estandarizar los features.
-
-Es común utilizar un *Standard Scaler* que computa la media y desviación estandard en el set de entrenamiento, para luego aplicarse a todas las muestras.
-
-Si nuestros datos pueden tener outliers, el *Robust Scaler* realiza una estimación mas robusta de la media y rango de los datos.
-
-- [Scikit Learn](http://scikit-learn.org/stable/modules/preprocessing.html#preprocessing)
-
-## *Feature Selection*
-
-Los metodos de selección de features se utilizan para identificar features innecesarios, irrelevantes y/o redundantes que no contribuyen a la predicción e incluso pueden decrementar la performance del clasificador.
-
-En nuestro ejemplo, contamos con 20 muestras (10 de cada grupo). Si la cantidad de features que utilizamos es muy grande, incrementa la complejidad del modelo, pero tambien incrementa la cantidad de datos que necesitamos utilizar para entrenar. Una *thumb rule* que suele funcionar: ![](https://latex.codecogs.com/gif.latex?\inline&space;N>2^d) donde *N* es el número de muestras y *d* es el número de features.
-
-Entre los métodos univariados soportados por Scikit Learn se encuentran:
-* *SelectKBest*: Elije los K mejores (K definido por el usuario).
-* *SelectPercentile*: Elije los K% mejores basados en la cantidad total de features (percentil definido por el usuario).
-
-- [Scikit Learn](http://scikit-learn.org/stable/modules/classes.html#module-sklearn.feature_selection)
-
-# 2. Ejercicios
-
-Para realizar los ejercicios vamos a utiliar los datos del trabajo práctico número 2. Cada sujeto es un *sample*, con su correspondiente *label* S o P.
-
-Los features que vamos a utilizar son:
-* Potencia para cada banda de frecuencia (Delta, Theta, Alpha, Beta y Gamma)
-* Potencia normalizada para las mismas bandas de frecuencia.
-* Una medida de información intra-electrodo (a elección)
-* Una medida de informacion inter-electrodo (a elección)
-
-La normalización a la que se refiere el enunciado del [TP2](http://www.dc.uba.ar/materias/cienciadatos/tps/tp2/enunciado) corresponde a dividir el poder de una banda de frecuencia por la suma del poder total:
-![Normalizacion](https://latex.codecogs.com/gif.latex?%5Cinline%20%5Cleft%20%5C%7C%20x%20%5Cright%20%5C%7C%20%3D%20%5Cfrac%7Bx%7D%7B%5Cdelta&plus;%5Ctheta&plus;%5Calpha&plus;%5Cbeta&plus;%5Cgamma%7D)
-
-Cada marcador especificado en el [TP2](http://www.dc.uba.ar/materias/cienciadatos/tps/tp2/enunciado) se debe computar por epochs. Es decir, **para cada epoch, debemos obtener un valor asociado al marcador** (incluyendo la normalización en el caso de los espectrales). Para computar el feature, se pueden relizar computando la media entre epochs (promedio en el tiempo) o la desviación estándard entre epochs (fluctuaciones en el tiempo). Tradicionalmente, la media suele ser la operación elégida para cuantificar los features cuando se tienen varias medidas en el tiempo. Sin embargo, no es cierto que sea la mas representativa en todos los casos. En el dominio de este trabajo práctico, dependiendo del feature, las fluctuaciones en el tiempo pueden ser incluso más importantes que el valor medio.
-
-En total, para cada muestra debemos obtener 24 features: 5 espectrales, 5 espectrales normalizadas, 1 intra-electrodo y 1 inter-electrodo, computadas como media y desviación estandar entre epochs.
+import sklearn.metrics as metrics
+import sklearn.linear_model as linear_model
+import sklearn.model_selection as model_selection
+from sklearn.svm import SVC
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.feature_selection import SelectKBest
+from sklearn.pipeline import Pipeline  
 
 
-## 2.1 Análisis Univariado
+import seaborn as sns
+sns.set('talk', 'whitegrid', 'dark', font_scale=1.5, rc={"lines.linewidth": 2, 'grid.linestyle': '--'})
+```
 
-a) Para cada feature, computar la curva ROC y graficarla como en el ejemplo:
-![Curva ROC](https://gist.githubusercontent.com/fraimondo/d217a0736db06afa2ea0b1c202e37c8c/raw/e137da57c2ddd13e121e0a02076fd5dd430349a9/figura_2_1_d.png)
 
-*Curva ROC para alpha*
+```python
+df_features = pd.read_pickle("df_features_estandarizado.pickle")
+df_features.head()
+```
 
-b) Utilizando una técnica de cross validación, estimar la performance de un classificador *Logistic Regression* para cada feature y graficar la curva ROC correspondiente. ¿Cuál es su conclución respecto a los resultados obtenidos en el punto anterior?
 
-## 2.2 Análisis Multivariado
-a) Utilizar todos los features y entrenar un clasificador basado en Support Vector Machine. Computar la curva roc y graficarla. No olvidar reportar el area bajo la curva.
 
-b) Repetir el punto a), pero utilizando un [*pipeline*](http://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html) de Scikit-Learn con los siguientes 3 pasos:
 
-1. *Standard Scaler*
-2. *Feature Selection* utilizando solo el 10%.
-3. *SVC*
+<div>
+<style>
+    .dataframe thead tr:only-child th {
+        text-align: right;
+    }
 
-¿Qué diferencia encuentra? ¿Y si utilizamos el 20% de los features? ¿Qué pasa si probamos y encontramos que utilizando el 35% de los features obtenemos la mejor AUC?
+    .dataframe thead th {
+        text-align: left;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>agrupacion_feature</th>
+      <th colspan="10" halign="left">media</th>
+      <th>...</th>
+      <th colspan="10" halign="left">std</th>
+    </tr>
+    <tr>
+      <th></th>
+      <th>feature</th>
+      <th>delta</th>
+      <th>theta</th>
+      <th>alpha</th>
+      <th>beta</th>
+      <th>gamma</th>
+      <th>delta_norm</th>
+      <th>theta_norm</th>
+      <th>alpha_norm</th>
+      <th>beta_norm</th>
+      <th>gamma_norm</th>
+      <th>...</th>
+      <th>alpha</th>
+      <th>beta</th>
+      <th>gamma</th>
+      <th>delta_norm</th>
+      <th>theta_norm</th>
+      <th>alpha_norm</th>
+      <th>beta_norm</th>
+      <th>gamma_norm</th>
+      <th>intra</th>
+      <th>inter</th>
+    </tr>
+    <tr>
+      <th>tipo</th>
+      <th>indice_paciente</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th rowspan="5" valign="top">P</th>
+      <th>0</th>
+      <td>0.500218</td>
+      <td>-0.240771</td>
+      <td>-0.688548</td>
+      <td>-0.459638</td>
+      <td>-0.406289</td>
+      <td>0.837666</td>
+      <td>-0.071074</td>
+      <td>-0.666111</td>
+      <td>-0.396677</td>
+      <td>-0.322384</td>
+      <td>...</td>
+      <td>-0.603870</td>
+      <td>0.195745</td>
+      <td>-0.339861</td>
+      <td>0.542809</td>
+      <td>0.114840</td>
+      <td>-0.453845</td>
+      <td>0.337590</td>
+      <td>-0.055859</td>
+      <td>1.574465</td>
+      <td>0.652673</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.970334</td>
+      <td>0.601456</td>
+      <td>-0.762397</td>
+      <td>-0.775901</td>
+      <td>-0.369460</td>
+      <td>1.079809</td>
+      <td>0.547332</td>
+      <td>-0.920190</td>
+      <td>-1.062210</td>
+      <td>-0.398412</td>
+      <td>...</td>
+      <td>-0.684283</td>
+      <td>-0.636885</td>
+      <td>-0.386052</td>
+      <td>0.706450</td>
+      <td>1.161500</td>
+      <td>-1.161972</td>
+      <td>-1.153092</td>
+      <td>-0.429586</td>
+      <td>-0.158501</td>
+      <td>1.019270</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2.070471</td>
+      <td>0.795315</td>
+      <td>-0.646674</td>
+      <td>-0.835162</td>
+      <td>-0.482753</td>
+      <td>1.370391</td>
+      <td>-0.193502</td>
+      <td>-0.852261</td>
+      <td>-1.294888</td>
+      <td>-0.517556</td>
+      <td>...</td>
+      <td>-0.661683</td>
+      <td>-0.924978</td>
+      <td>-0.559998</td>
+      <td>-0.959542</td>
+      <td>-0.148300</td>
+      <td>-0.983480</td>
+      <td>-1.932346</td>
+      <td>-0.810451</td>
+      <td>1.055501</td>
+      <td>1.554689</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.734391</td>
+      <td>1.359020</td>
+      <td>-0.410337</td>
+      <td>-0.592436</td>
+      <td>-0.501728</td>
+      <td>0.578035</td>
+      <td>1.356012</td>
+      <td>-0.573282</td>
+      <td>-0.948825</td>
+      <td>-0.521571</td>
+      <td>...</td>
+      <td>-0.343123</td>
+      <td>-0.445636</td>
+      <td>-0.519770</td>
+      <td>1.467841</td>
+      <td>1.439780</td>
+      <td>-0.350221</td>
+      <td>-0.981742</td>
+      <td>-0.788827</td>
+      <td>0.124952</td>
+      <td>1.024255</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>1.537761</td>
+      <td>0.742978</td>
+      <td>-0.572930</td>
+      <td>-0.462701</td>
+      <td>-0.280550</td>
+      <td>1.062737</td>
+      <td>0.100820</td>
+      <td>-0.785426</td>
+      <td>-0.944991</td>
+      <td>-0.380050</td>
+      <td>...</td>
+      <td>-0.621974</td>
+      <td>-0.682284</td>
+      <td>-0.354744</td>
+      <td>0.278225</td>
+      <td>0.464447</td>
+      <td>-0.914285</td>
+      <td>-1.192041</td>
+      <td>-0.408850</td>
+      <td>-0.482241</td>
+      <td>1.149974</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 24 columns</p>
+</div>
+
+
+
+<h3>Aclaración previa</h3>
+<p>Se definió como "positivo" a aquellos individuos con capacidad cognitiva reducida. Como se verá adelante, esta decisión influencia sobre la efectividad de algunos de los métodos con los cuales se experimenta.
+
+
+```python
+# Agrego 1 y 0 para indicar si son o no casos de capacidad cognitiva reducida
+df_features["valor_real"] = 0
+df_features.loc["P","valor_real"] = 1
+```
+
+
+```python
+c_bandas = ["alpha", "beta", "delta", "gamma", "theta"]
+c_bandas_norm = [b+"_norm" for b in c_bandas]
+c_entropia = ["inter", "intra"]
+
+c_bandas = [(a,b) for  a in ["media", "std"]for b in c_bandas]
+c_bandas_norm = [(a,b) for  a in ["media", "std"]for b in c_bandas_norm]
+c_entropia = [(a,b) for  a in ["media", "std"]for b in c_entropia]
+```
+
+<h1>Análisis univariado</h1>
+<p>En esta primera sección se busca analizar la capacidad como clasificador de cada <i>feature</i> por separado. Para ello, dada una <i>feature</i> particular, se plantean dos métodos:
+<ol>
+<li>Utilizar únicamente un umbral tal que serán clasificados como casos positivos aquellas instancias cuyos valores para dicha <i>feature</i> sean mayores al umbral en cuestión.</li>
+<li>Entrenar un modelo de regresión logística para cada <i>feature</i>, prediciendo luego la probabilidad de que cada instancia sea o no positiva. Hecho esto se utilizará nuevamente un umbral para definir cuales instancias son positivas.</li>
+</ol>
+
+
+```python
+def threshold_ROC(expected, predicted, feature_name, ax=None, plot_ROC=True, **plot_args):
+    fpr, tpr, _ = metrics.roc_curve(expected, predicted)
+    roc_auc = metrics.auc(fpr, tpr)
+
+    if plot_ROC:
+        ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        ax.plot(fpr, tpr, lw=4, **plot_args)
+        ax.set_xlim([0.0, 1.0])
+        ax.set_ylim([0.0, 1.05])
+        feature_name = feature_name.replace("estándar ", "estándar\n")
+        ax.set_title('{name}'.format(name=feature_name, AUC=roc_auc))
+    
+    return roc_auc
+
+def name_of_feature(c):
+    return " ".join([c[0], *(c[1].split("_"))]).capitalize().replace("norm", "normalizada").replace("Std", "Desviación estándar")
+
+# COMO METO EL POLIMORFISMO!!1!UNO
+
+def nombre_bonito(s):
+    return s.capitalize().replace("norm", "normalizada").replace("Std", "Desviación estándar").replace("_", " ")
+```
+
+
+```python
+def analisis_univariado(df_, df_metr, axes):
+    for c in (c_bandas + c_bandas_norm + c_entropia):
+        feature_name = name_of_feature(c)
+        plot_args = {
+            "color": 'darkorange',
+            "ls": "-."
+        }
+        auc = threshold_ROC(
+            df_["valor_real"].values,
+            df_[c],
+            feature_name=name_of_feature(c),
+            ax=axes[c],
+            **plot_args
+        )
+
+        df_metr.loc[c,"umbral_auc"] = auc
+    
+    return axes
+
+```
+
+
+```python
+def analisis_regresion_logistica(df_, df_metr, axes):
+    for c in (c_bandas + c_bandas_norm + c_entropia):
+        clf = linear_model.LogisticRegression()
+        X = df_[c].values.reshape(df_[c].size,1)
+        Y = df_["valor_real"]
+        scores = model_selection.cross_val_score(clf, X, Y)
+        df_metr.loc[c, "regLog_score"] = sum(scores) / len(scores)
+        
+        clf.fit(X, Y)
+        predicted = clf.predict(X)
+        
+        plot_args = {
+            "color": "red",
+            "ls": ":"
+        }
+        auc = threshold_ROC(
+            df_["valor_real"].values,
+            predicted,
+            feature_name=name_of_feature(c),
+            ax=axes[c],
+            **plot_args
+        )
+        
+        df_metr.loc[c, "regLog_auc"] = auc
+        
+```
+
+<h2>Curvas ROC</h2>
+<p> Para comparar inicialmente la efectividad de ambos métodos se crean las curvas ROC correspondientes a cada <i>feature</i>.
+
+
+```python
+plt.close()
+
+axes = dict()
+fig = plt.figure(figsize=(25,25))
+for son_bandas, l in [(True, c_bandas+c_bandas_norm), (False, c_entropia)]:
+    for j, c in enumerate(l):
+        if son_bandas:
+            i = (0 if c[0] == "media" else 1) + (2 if j >=10 else 0) + 1
+            j = j % 5
+        else:
+            i = 0
+            j = j if j < 2 else (j+1)
+
+        ax = plt.subplot2grid((5,5), (i,j))
+        axes[c] = ax
+        if i == 4:
+            ax.set_xlabel('FPR')
+        else:
+            ax.xaxis.set_major_formatter(NullFormatter())
+
+        if j == 0:
+            ax.set_ylabel('TPR')
+        else:
+            ax.yaxis.set_major_formatter(NullFormatter())
+
+df_metricas = pd.DataFrame(
+    index=pd.MultiIndex.from_arrays(list(zip(*sorted(c_bandas + c_bandas_norm + c_entropia)))))
+analisis_univariado(df_features, df_metricas, axes)
+analisis_regresion_logistica(df_features, df_metricas, axes)
+
+p_reg_log = mpatches.Patch(color='red')
+p_umbral = mpatches.Patch(color='darkorange')
+fig.legend(
+    labels=['Umbral', 'Regresión logística'],
+    handles=[p_umbral, p_reg_log],
+    loc="upper center",
+    bbox_to_anchor=(0.5, 0.88)
+)
+
+fig.tight_layout()
+fig.subplots_adjust(hspace=0.5)
+plt.subplots_adjust(top=0.9)
+plt.suptitle("Curvas ROC para features individuales")
+
+plt.show()
+```
+
+
+![png](readme_images/output_10_0.png)
+
+
+<h2>Valores de AUC</h2>
+<p> Para complementar las curvas ROC, se muestra a continuación el valor de AUC para cada una de ellas.
+
+
+```python
+c_feature = "Feature"
+df_auc = df_metricas.reset_index()
+df_auc[c_feature] =  (df_auc["level_0"] + " " + df_auc["level_1"]).apply(nombre_bonito)
+
+c_umbral = "Umbral"
+c_reg_log = "Regresión logística"
+c_feature = "Feature"
+df_auc.rename(columns={"umbral_auc": c_umbral, "regLog_auc": c_reg_log}, inplace=True)
+df_auc = df_auc[[c_feature, c_umbral, c_reg_log]].sort_values(c_umbral, ascending=False)
+
+f, ax = plt.subplots(1, 1)
+args = {
+    "data": df_auc,
+    "ax": ax,
+    "x": c_feature,
+    "join": False
+}
+
+plt.xticks(rotation=90)
+sns.pointplot(y=c_umbral, color='blue', **args)
+sns.pointplot(y=c_reg_log, color='green', **args)
+ax.legend(handles=ax.lines[::len(df_auc)+1], labels=["Umbral","Regresión logística"])
+
+plt.ylabel("AUC")
+ttl = plt.title("Comparación de AUC para ambos métodos y distintas features")
+ttl.set_position([.5, 1.05])
+
+plt.show()
+    
+```
+
+
+![png](readme_images/output_12_0.png)
+
+
+La primer observación a realizar es como el método obtiene resultados extremos: por un lado se obtienen altos valores de AUC para <b>Media Delta Normalizada</b> o <b>Desviación Estandar Inter</b>, mientras que con otros <i>features</i> el resultado es completamente distinto, como en la <b>Media Intra</b>.
+Sin embargo ésto no se debe a que no sean separables los valores de ambos grupos: de hecho, en los casos donde el AUC es prácticamente cero, el problema es que la predicción que se está realizando es completamente inversa a lo que debería ser.
+
+La causa es que el método simplemente utiliza un umbral particular, clasificando luego como negativos a aquellos que estén por debajo de él y como positivos a aquellos que estén por arriba.
+Si para alguna <i>feature</i> los valores difieren entre ambas clases, pero con la particularidad de que las instancias negativas tienen mayores valores, entonces el método será inútil.
+Una solución sencilla sería agregar como <i>features</i> al negativo de cada una ya existente y elegir para el método umbral a aquella de las dos que sea conveniente.
+Si se realizara esta modificación el método umbral no tendría casos donde el AUC sea menor a 0.5.
+
+Así como vemos nuestros resultados de comparación de AUC como con las curvas ROC, se puede notar que el modelo de regresión logística se ajusta bien a nuestros datos, siendo el candidato a elección entre ambos métodos.  
+
+<h2>Validación cruzada para regresión logística</h2>
+<p> Se muestra a continuación el resultado obtenido para los modelos individuales de regresión logística.
+
+
+
+```python
+c_feature = "Feature"
+df_reg_log = df_metricas.reset_index()
+df_reg_log[c_feature] =  (df_reg_log["level_0"] + " " + df_reg_log["level_1"]).apply(nombre_bonito)
+    
+c_metrica = "Métrica"
+df_reg_log.rename(columns={"regLog_score": c_metrica}, inplace=True)
+df_reg_log = df_reg_log[[c_feature, c_metrica]].sort_values(c_metrica, ascending=False)
+
+plt.xticks(rotation=90)
+sns.pointplot(x=c_feature, y=c_metrica, data=df_reg_log, join=False)
+
+plt.ylabel(c_metrica)
+ttl = plt.title("Valor de {} para distintas features".format(c_metrica.lower()))
+ttl.set_position([.5, 1.05])
+
+plt.show()
+```
+
+
+![png](readme_images/output_15_0.png)
+
+
+Podemos ver como se podía esperar por el gráfico anterior que los mejores resultados se obtienen con los features <b>Media Delta Normalizada</b>, <b>Media Beta Normalizada</b> y <b>Desviación Estandar Inter</b>. En el caso de este primer feature, también nos condujo a buenos resultados utilizando umbrales, lo cual nos dice que aporta mucha información en una clasificación. Sería de interés comprobar estos resultados con más sets de prueba.
+
+<h1>Análisis multivariado</h1>
+<p> En esta sección se analizan los resultados obtenidos con clasificadores basados en el algoritmo de <i>Support Vector Machine</i> según dos variantes:
+<ol>
+    <li>Utilizar todos los <i>features</i> para entrenar el clasificador.</li>
+    <li>Aplicar un <i>pipeline</i> basado en un <i>scaler</i>, <i>feature selection</i> y finalmente la clasificación utilizando SVM</li>
+</ol>
+
+
+```python
+X = df_features.drop(("valor_real", ""), axis=1)
+Y = df_features["valor_real"]
+
+```
+
+
+```python
+def analisis_modelo(fitted_clf, X, Y, ax=ax, plot_ROC=True):
+    classes_prob = fitted_clf.predict_proba(X)
+    
+    idx_class = np.where(fitted_clf.classes_ == 1)[0][0]
+    predicted = classes_prob[:,idx_class]
+
+    scores = model_selection.cross_val_score(fitted_clf, X, Y)
+    final_score = sum(scores) / len(scores)
+
+    plot_args = {
+        "color": "black",
+        "ls": ":"
+    }
+
+    auc = threshold_ROC(Y.values, predicted, "SVM", ax=ax, plot_ROC=plot_ROC, **plot_args)
+    return auc, final_score
+```
+
+Para comparar los resultados de ambos clasificadores se gráfican las correspondientes curvas ROC y se calcula el score obtenido.
+
+
+```python
+f, axes = plt.subplots(1,2)
+
+# SVM sin pipeline
+clf_sin_pipeline = SVC(probability=True)
+clf_sin_pipeline.fit(X,Y)
+
+auc_sp, score_sp = analisis_modelo(clf_sin_pipeline, X, Y, ax=axes[0])
+
+# SVM con pipeline
+steps = [
+    ("preprocesamiento", MinMaxScaler()),
+    ("selector_features", SelectKBest(k=2)),
+    ("svm", SVC(probability=True))
+]
+
+clf_con_pipeline = Pipeline(steps)
+clf_con_pipeline.fit(X,Y)
+
+auc_cp, score_cp = analisis_modelo(clf_con_pipeline, X, Y, ax=axes[1])
+
+axes[0].set_title("Sin pipeline")
+axes[1].set_title("Con pipeline")
+plt.show()
+
+for m, a, s in [("SVM sin pipeline", auc_sp, score_sp), ("SVM con pipeline", auc_cp, score_cp)]:
+    print("Resultados obtenidos para", m)
+    print("\tAUC:", "{:0.2f}".format(a))
+    print("\tScore:", "{:0.2f}".format(s))
+
+```
+
+
+![png](readme_images/output_21_0.png)
+
+
+    Resultados obtenidos para SVM sin pipeline
+    	AUC: 1.00
+    	Score: 0.94
+    Resultados obtenidos para SVM con pipeline
+    	AUC: 1.00
+    	Score: 1.00
+
+
+Se puede ver que aunque el AUC haya arrajodo el mismo valor, el score final obtenido es mejor utilizando pipeline. 
+
+Para este pipeline se utilizó sólo el 10% de los features (2 de 20 en este caso), de modo que puede ser de interés observar los resultados obtenidos utilizanod más. El siguiente gráfico muestra cómo afecta la cantidad de features utlizadas en el score del modelo.
+
+
+```python
+cantidades = list(range(1,21))
+df_scores = pd.DataFrame(data={"Score":np.zeros(20)}, index=cantidades)
+
+for mi_k in cantidades:
+    # SVM con pipeline
+    steps = [
+        ("preprocesamiento", MinMaxScaler()),
+        ("selector_features", SelectKBest(k=mi_k)),
+        ("svm", SVC(probability=True))
+    ]
+
+    clf = Pipeline(steps)
+    clf.fit(X,Y)
+
+    _, score = analisis_modelo(clf, X, Y, plot_ROC=False)
+    df_scores.loc[mi_k] = score
+    
+df_scores = df_scores.reset_index().rename(columns={"index": "Cantidad de features"}) 
+
+sns.pointplot(data=df_scores, x="Cantidad de features", y="Score", join=False)
+plt.ylabel("Score obtenido")
+plt.title("Resultado según distintas cantidades de features")
+plt.show()
+```
+
+
+![png](readme_images/output_23_0.png)
+
+
+<h3>Conclusiones</h3>
+<blockquote>
+    <p>Pueden encontrarse varios modelos que obtengan buenos datos en base a nuestro set de datos, tanto univariado como multivariado. Teniendo en cuenta:
+    <ul>
+        <li>que tenemos pocas muestras.</li>
+        <li>los resultados obtenidos.</li>
+        <li>la recomendaciónde la cátedra N > 2 <sup>d</sup> de la cátedra con <i>d</i> la cantidad de features y <i>N</i>la cantidad de muestras necesarias para entrenar nuestro modelo.</li>
+    </ul>
+    <p>se escoge el último clasficador sobre los demás (basado en SVM con pipeline utilizando el 10% de los features).</p>
+</blockquote>
